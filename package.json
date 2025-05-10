@@ -16,8 +16,10 @@
   "packageManager": "pnpm@10.10.0",
   "devDependencies": {
     "@types/node": "^22.15.17",
+    "@types/pg": "^8.15.1",
     "@typescript-eslint/eslint-plugin": "^8.32.0",
     "@typescript-eslint/parser": "^8.32.0",
+    "drizzle-kit": "^0.31.1",
     "eslint": "^9.26.0",
     "eslint-config-prettier": "^10.1.5",
     "eslint-plugin-prettier": "^5.4.0",
@@ -27,6 +29,8 @@
     "typescript": "^5.8.3"
   },
   "dependencies": {
-    "dotenv": "^16.5.0"
+    "dotenv": "^16.5.0",
+    "drizzle-orm": "^0.43.1",
+    "pg": "^8.15.6"
   }
 }
