@@ -3,7 +3,7 @@ import 'dotenv/config';
 
 export default defineConfig({
     dialect: 'postgresql',
-    schema: './src/db/schema/**',
+    schema: './src/db/schema',
     out: './drizzle',
     dbCredentials: {
         url: process.env.NEON_DATABASE_URL!,
