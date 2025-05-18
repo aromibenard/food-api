@@ -2,7 +2,7 @@ import crypto from 'crypto';
 import express from 'express';
 import { AppError, errorHandler } from './middleware/errorHandler';
 import { db } from './db';
-import { and, eq, Query, sql } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import { apiKeys } from './db/schema/apiKeys';
 import { meals } from './db/schema/meals';
 import { keyGenerationLimiter, apiLimiter } from './middleware/rateLimiter';
@@ -68,7 +68,6 @@ app.post("/api-keys", keyGenerationLimiter, async (req, res, next) => {
 app.get("/api-keys", authenticateApiKey, async (req, res, next) => {
     try {
         const keys = await db.query.apiKeys.findMany()
-
         res.status(200).json(keys)
     } catch (error) {
         next(error)
@@ -77,45 +76,12 @@ app.get("/api-keys", authenticateApiKey, async (req, res, next) => {
 
 // Get meal suggestions (protected)
 app.get("/meals", authenticateApiKey, apiLimiter, async (req, res, next) => {
-    const { category, limit = 10 } = req.query;
+    const { limit = 2 } = req.query;
     try {
         let query = db.select().from(meals);
 
-        if (category) {
-            query = query.where(
-                sql`${meals.category} @> ARRAY[${category}]::text[]`
-            ) as any;
-        }
-
         const results = await query.limit(Number(limit));
         res.json(results);
-    } catch (error) {
-        next(error);
-    }
-});
-
-// Add a new meal (protected)
-app.post("/meals", authenticateApiKey, apiLimiter, async (req, res, next) => {
-    try {
-        const validatedData = createMealSchema.parse(req.body);
-
-      // Normalize data to arrays
-        const categories = Array.isArray(validatedData.category) 
-            ? validatedData.category 
-            : [validatedData.category];
-
-        const imageUrls = Array.isArray(validatedData.image_url)
-            ? validatedData.image_url
-            : [validatedData.image_url];
-
-        const [newMeal] = await db.insert(meals).values({
-            name: validatedData.name,
-            description: validatedData.description,
-            category: categories,
-            image_url: imageUrls,
-        }).returning();
-
-        res.status(201).json(newMeal);
     } catch (error) {
         next(error);
     }

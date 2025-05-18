@@ -1,11 +1,12 @@
-import { pgTable, serial , text, varchar, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, timestamp } from "drizzle-orm/pg-core";
 
 export const meals = pgTable("meals", {
     id: serial("id").primaryKey(),
-    name: varchar("name", { length: 255 }).notNull(),
-    description: text("description"),
-    category: text("category").array().notNull(),
-    image_url: text("image_url").array().notNull(),
+    title: text("title").notNull(),
+    url: text("url").notNull(),
+    imageUrl: text("image_url").notNull(),
     created_at: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
-    updated_at: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 });
+
+export type Meal = typeof meals.$inferSelect;
+export type NewMeal = typeof meals.$inferInsert;
