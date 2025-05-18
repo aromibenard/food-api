@@ -144,7 +144,4 @@ app.get('/meals/random', authenticateApiKey, apiLimiter, async (req, res, next) 
 // Apply error handler middleware
 app.use(errorHandler);
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-});
+export default app;
