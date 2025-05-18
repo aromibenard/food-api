@@ -2,7 +2,7 @@ import crypto from 'crypto';
 import express from 'express';
 import { AppError, errorHandler } from './middleware/errorHandler';
 import { db } from './db';
-import { and, eq } from 'drizzle-orm';
+import { and, eq , sql } from 'drizzle-orm';
 import { apiKeys } from './db/schema/apiKeys';
 import { meals } from './db/schema/meals';
 import { keyGenerationLimiter, apiLimiter } from './middleware/rateLimiter';
@@ -74,18 +74,72 @@ app.get("/api-keys", authenticateApiKey, async (req, res, next) => {
     }
 })
 
-// Get meal suggestions (protected)
+// ******************************************************
+// GET MEAL SUGGESTIONS (PROTECTED)
+// ********************************
+//         QUERY OPTIONS
+// ********************************
+//
+// 1. Basic request (default limit 10)
+//    curl -H "x-api-key: key" http://localhost:3000/meals
+//  ------------------------------------------------
+// 2. Custom limit and offset
+//    curl -H "x-api-key: key" 
+//      "http://localhost:3000/meals?limit=5&offset=10"
+//  ------------------------------------------------
+// 3. With search
+//    curl -H "x-api-key: key" 
+//      "http://localhost:3000/meals?search=rice"
+//  ------------------------------------------------
+// 4. With search  + pagination
+//    curl -H "x-api-key: key"
+//       "http://localhost:3000/meals?search=rice&limit=5&offset=0"
+//
+// ******************************************************************
+
 app.get("/meals", authenticateApiKey, apiLimiter, async (req, res, next) => {
-    const { limit = 2 } = req.query;
     try {
+        const { limit = 10, offset = 0, search } = req.query 
         let query = db.select().from(meals);
 
-        const results = await query.limit(Number(limit));
+        if (search) {
+            query = query.where(sql`${meals.title} ILIKE ${'%' + search + '%'}`) as any;
+        }
+        
+        const results = await query
+            .limit(Number(limit))
+            .offset(Number(offset))
+
         res.json(results);
     } catch (error) {
         next(error);
     }
 });
+
+//  **** EXAMPLE REQUESTS ******
+//  ----------------------------------
+//  GET /meals/random → 1 random meal
+//  GET /meals/random?count=5 → 5 random meals
+//  GET /meals/random?count=20
+
+app.get('/meals/random', authenticateApiKey, apiLimiter, async (req, res, next) => {
+    try {
+        // default to 1, max 10;
+        const count = Math.min(Number(req.query.count) || 1, 10) 
+
+        const randomMeals = await db 
+            .select()
+            .from(meals)
+            .orderBy(sql`RANDOM()`)
+            .limit(count)
+
+        if(!randomMeals || randomMeals.length === 0) {
+            throw new AppError('No meals found', 404)
+        }
+
+        res.json(count === 1 ? randomMeals[0] : randomMeals);
+    } catch (error) { next(error) }
+})
 
 // Apply error handler middleware
 app.use(errorHandler);
